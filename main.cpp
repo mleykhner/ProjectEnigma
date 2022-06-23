@@ -9,11 +9,17 @@ std::string encryptText(std::string input, int rots[], int * poss); //Шифро
 void updatePlugboardSetup(char A, char B); //Изменение настройки коммутационной панели
 void resetPlugboardSetup(); //Сбросить настройки коммутационной панели
 
+//Общие настройки
+bool saveSpaces = false;
+bool saveUnencryptableSymbols = false;
+//Общие настройки
+
+
 int main() {
     int activeRotors[] = {0, 1, 2, 5}; //Настройка активных роторов и рефлектора
-    int activeRotors_poss[] = {11, 23, 12, 0}; //Настройка начального положения //Изменение позиции рефлектора ломает все
+    int activeRotors_poss[] = {11, 23, 12}; //Настройка начального положения
 
-    std::string text = "HGA";
+    std::string text = "bebrabebra";
     std::string encrypted = encryptText(text, activeRotors, activeRotors_poss);
     std::cout << encrypted;
     return 0;
@@ -29,11 +35,11 @@ std::string encryptText(std::string input, int rots[], int * poss){
             temp += char(projectLetter(currentSymbol, rots, poss) + 65);
         }
         else if (currentSymbol == -33){
-            temp += ' ';
+            if(saveSpaces) temp += ' ';
         }
         else{
-            if (currentSymbol != -65) unencryptedSymbols = true;
-            temp += input[i];
+            unencryptedSymbols = true;
+            if(saveUnencryptableSymbols) temp += input[i];
         }
     }
     if(unencryptedSymbols) std::cout << "String contains unencryptable symbols\n";
@@ -41,26 +47,31 @@ std::string encryptText(std::string input, int rots[], int * poss){
 }
 
 int rotorStep(int rotor, int input, int direction, int position){
-    return (rotors[rotor][direction][(input + (direction ? 0 : position)) % 26] - (direction ? position : 0)) % 26;
-    //            ^ротор ^направление   ^входной символ      ^смещение вперед                           ^смещение назад
+    return  (rotors[rotor][direction]
+            [(input + (direction ? 0 : position)) % 26]
+            - (direction ? position : 0)) % 26;
 }
 
 int projectLetter(int input, int rots[], int * poss){
     int temp = plugboardSetup[input];
     for (int i = 3; i > -4 ; i--){
-        temp = rotorStep(rots[3 - abs(i)], temp, (i >= 0 ? 0 : 1), poss[3 - abs(i)]);
+        temp = rotorStep(rots[3 - abs(i)], temp, (i >= 0 ? 0 : 1), (i ? poss[3 - abs(i)] : 0));
         while (temp < 0) temp += 26;
     }
     newPositions(poss);
+    for (int i = 0; i < 3; i++){
+        std::cout << "[" << i << "]: " << poss[i] << "\t";
+    }
+    std::cout << std::endl;
     return plugboardSetup[temp];
 }
 
 void newPositions(int * positions){
-    (positions[0])++;
-    for (int i = 0; i < 4; i++){
+    positions[0]++;
+    for (int i = 0; i < 3; i++){
         if(positions[i] > 25){
             positions[i] = 0;
-            if(i < 3) (positions[i + 1])++;
+            if(i < 2) positions[i + 1]++;
         }
     }
 }
